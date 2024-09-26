@@ -24,10 +24,6 @@ We will provide more information, including feature demos, as we approach a stab
 -  ⁠🌟 *Star this repository* to receive notifications about the latest updates.
 -  ⁠📧 *Watch* the repository for detailed development progress.
 
-## Contact
-
-shuqi.wang@epfl.ch
-
 ---
 
-Thank you for your interest! Stay tuned for more updates. 🎉
+Thank you for your interest! Stay tuned for more updates. In case you have any questions, please get in touch with me: shuqi.wang@epfl.ch
