@@ -5,19 +5,21 @@
 ## Overview
 
 This project implements a simple but efficient linear encoding model for describing the single-neuron, task-driven responses.
+See `RRR_poster.pdf` for detailed information about the implemented encoding model.
 
 ## Current Status
 
-At the moment, we have:
+You can find the minimum code to fit a reduced-rank regression (RRR) encoding model in this repo.
 
--  🚀 Built core features.
--  ⁠🧪 Experimented on the IBL brainwide map dataset.
+The core functions are implemented in `RRRGD.py` and `RRRGD_main_CV.py`. 
+Check `train_RRR.py` for example usage of fitting the model to an IBL session with 100 trials.
 
-We are
+I am
 
--   ⁠📖 Writing documentation and examples.
+-   📖 preparing more demos and better documentation.
+-   💻 preparing to release codes for other linear encoding models (e.g., general linear model, another variant of RRR model).
 
-We will provide more information, including feature demos, as we approach a stable release.
+In case you have any questions, please get in touch with me: shuqi.wang@epfl.ch
 
 ## How to Stay Updated
 
@@ -26,4 +28,4 @@ We will provide more information, including feature demos, as we approach a stab
 
 ---
 
-Thank you for your interest! Stay tuned for more updates. In case you have any questions, please get in touch with me: shuqi.wang@epfl.ch
+Thank you for your interest! Stay tuned for more updates. 
