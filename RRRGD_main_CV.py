@@ -1,15 +1,14 @@
 from utils import get_device
-from RRRGD import train_model, RRRGD_model
+from RRRGD import train_model, RRRGD_model, RRRGD_model_Vdep
 from torch import optim
 import numpy as np
-import pickle
+import pickle, pdb
 from sklearn.model_selection import train_test_split
 
 
-def train_model_main(train_data, l2, n_comp, model_fname,
+def train_model_main(train_data, RRR_model, model_fname,
                         lr, max_iter, tolerance_grad, tolerance_change, history_size, line_search_fn,
                         save):
-    RRR_model = RRRGD_model(train_data, n_comp, l2=l2)
     
     device = get_device()
     RRR_model.to(device)
@@ -64,9 +63,10 @@ r2s_cv_best: {eid: (N)} mean validated r2 as the evaluation of performance for e
 model: trained model using the whole dataset
 """
 def train_model_hyper_selection(train_data, n_comp_list, l2_list, model_fname,
-                   lr=1., max_iter=500, tolerance_grad=1e-7, tolerance_change=1e-9, history_size=100, line_search_fn=None,
-                   nsplit=3, test_size=0.3,
-                   ):
+                                Vdep=False,
+                                lr=1., max_iter=500, tolerance_grad=1e-7, tolerance_change=1e-9, history_size=100, line_search_fn=None,
+                                nsplit=3, test_size=0.3,
+                                ):
     # params for LBFGS optimization algorithm
     # the default ones are generally good
     train_params = dict(lr=lr, max_iter=max_iter, 
@@ -91,7 +91,11 @@ def train_model_hyper_selection(train_data, n_comp_list, l2_list, model_fname,
                     for eid in train_data:
                         train_data[eid] = stratify_data_random(train_data[eid], spliti, test_size=test_size)
 
-                    _, eval_val = train_model_main(train_data, l2, n_comp, 
+                    if Vdep:
+                        RRR_model = RRRGD_model_Vdep(train_data, n_comp, l2=l2)
+                    else:
+                        RRR_model = RRRGD_model(train_data, n_comp, l2=l2)
+                    _, eval_val = train_model_main(train_data, RRR_model, 
                                                     model_fname=None, save=False, 
                                                     **train_params)
                     mse_val_splits.append(eval_val['mse_val_mean'])
@@ -112,13 +116,17 @@ def train_model_hyper_selection(train_data, n_comp_list, l2_list, model_fname,
             train_data[eid] = stratify_data_random(train_data[eid], spliti, test_size=test_size)
 
         model_fname_i = f"{model_fname}_split{spliti}.pt" # hard-coded
-        model_i, eval_val = train_model_main(train_data, best_l2, best_n_comp, 
+        if Vdep:
+            RRR_model = RRRGD_model_Vdep(train_data, best_n_comp, l2=best_l2)
+        else:
+            RRR_model = RRRGD_model(train_data, best_n_comp, l2=best_l2)
+        model_i, eval_val = train_model_main(train_data, RRR_model, 
                                                 model_fname=model_fname_i,  
                                                 save=True, **train_params)
         r2s_split.append(eval_val['r2s_val'])
         models_split.append(model_i)
     r2s_cv_best = {eid: np.mean([r2s[eid] for r2s in r2s_split], 0) for eid in r2s_split[0]}
-    with open(f"{model_fname}_R2CV.pk", "wb") as file:  # hard-coded
+    with open(f"{model_fname}_R2test.pk", "wb") as file:  # hard-coded
         pickle.dump(r2s_cv_best, file)
 
     ## retrain the RRR model *on the whole dataset* with the selected best set of hyperparameters

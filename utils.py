@@ -3,6 +3,8 @@ import torch.nn as nn
 import numpy as np
 from sklearn.metrics import r2_score
 
+import os
+
 def remove_space(s):
     s = s.replace(" ","")
     s = s.replace("'", "")
@@ -13,6 +15,14 @@ def remove_space(s):
     s = s.replace(":", "")
     s = s.replace(",", "_")
     return s
+
+def log_kv(**kwargs):
+    print(f"{kwargs}")
+
+def make_folder(folder):
+    if not os.path.isdir(folder):
+        os.makedirs(folder)
+    return folder
 
 
 def get_device():

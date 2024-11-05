@@ -115,9 +115,45 @@ class RRRGD_model():
             r2s_all[eid] = r2s_val
         return r2s_all
 
+### in contrary to RRRGD_model where all input variables share the same V
+### here V depend on input variables
+class RRRGD_model_Vdep(RRRGD_model):
+    def __init__(self, train_data, ncomp, l2=0.):
+        RRRGD_model.__init__(self,train_data, ncomp, l2=l2)
+
+        np.random.seed(0)
+        self.model = {}
+        for eid in train_data:
+            _X = train_data[eid]['X'][0] # (K,T,ncoef+1), the last coef is the bias term
+            _y = train_data[eid]['y'][0] # (K,T,N)
+            _, T, ncoef = _X.shape
+            ncoef -= 1 # -1 is for the concatenated 1s in X
+            _, T, N = _y.shape
+            U = np.random.normal(size=(N, ncoef, ncomp))/np.sqrt(T*ncomp) 
+            V = np.random.normal(size=(ncoef, ncomp, T))/np.sqrt(T*ncomp)
+            b = np.expand_dims(_y.mean(0).T, 1)
+            b = np.ascontiguousarray(b)
+            self.model[eid+"_U"]=np2param(U)
+            self.model[eid+"_b"]=np2param(b)
+        self.model['V'] = np2param(V) # V shared across sessions
+        self.model = nn.ParameterDict(self.model)
+        # U: model[eid+"_U"], (N, ncoef, ncomp)
+        # V: model['V'], (ncoef, ncomp, T)
+        # b: model[eid+"_b"], (N, 1, T)
+
+    def compute_beta(self, eid, withbias=True):
+        U = self.model[eid + "_U"]  # (N, ncoef, ncomp)
+        V = self.model['V']         # (ncoef, ncomp, T)
+        b = self.model[eid + "_b"]
+
+        beta = torch.einsum('ncr,crt->nct', U, V)
+        if withbias:
+            beta = torch.cat((beta, b), 1) # (N, ncoef+1, T)
+        
+        return beta
 """
 train the 
-    model: RRRGD_model
+    model: RRRGD_model or its inheritence
 given the
     train_data: {eid: {X: (train_X, val_X), 
                        y: (train_y, val_y),
