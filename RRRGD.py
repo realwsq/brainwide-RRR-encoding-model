@@ -1,4 +1,6 @@
 import numpy as np
+import os, pickle, pdb
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 from utils import np2tensor, np2param, tensor2np, compute_R2_main
@@ -49,16 +51,32 @@ class RRRGD_model():
     def load_state_dict(self, f):
         self.model.load_state_dict(f)
 
-    def compute_beta(self, eid, withbias=True):
-        U = self.model[eid + "_U"]
-        V = self.model['V']
-        b = self.model[eid + "_b"]
-
+    """
+    * input has to be tensor
+    """
+    @classmethod
+    def compute_beta_m(cls, U, V, b, withbias=True, tonp=False):
+        if tonp == True:
+            U = np2tensor(U)
+            V = np2tensor(V)
         beta = U @ V
         if withbias:
+            if tonp == True:
+                b = np2tensor(b)
             beta = torch.cat((beta, b), 1) # (N, ncoef+1, T)
+        else:
+            pass 
+        if tonp == True:
+            beta = tensor2np(beta)
         
         return beta
+
+    def compute_beta(self, eid, withbias=True):
+        return RRRGD_model.compute_beta_m(self.model[eid + "_U"],
+                                    self.model['V'],
+                                    self.model[eid + "_b"],
+                                    withbias=withbias)
+
 
     """
     - data {eid: nparray}
@@ -114,6 +132,60 @@ class RRRGD_model():
                                     clip=True)
             r2s_all[eid] = r2s_val
         return r2s_all
+
+    
+    @classmethod
+    def params2RRRres(cls, fname, has_area=False):
+        res = torch.load(f"{fname}.pt", map_location=torch.device('cpu'))
+        best_l2 = res["RRRGD_model"]["l2"]
+        best_ncomp = res["RRRGD_model"]["n_comp"]
+        res = res["RRRGD_model"]["model"]
+        if os.path.isfile(fname + "_R2test.pk"):
+            with open(fname + "_R2test.pk", "rb") as file:  # hard-coded
+                r2s = pickle.load(file)
+        else:
+            r2s = None
+        res_dict = {}
+        for k in tqdm(res.keys(), desc="params2RRRres"):
+            if (k == "V"):
+                pass
+            else:
+                V = tensor2np(res['V'])
+                if has_area:
+                    area, eid, k_ = k.split("_")
+                    if not (area in res_dict):
+                        res_dict[area] = {}
+                    if (eid in res_dict[area]):
+                        pass
+                    U = tensor2np(res[f"{area}_{eid}_U"])
+                    b = tensor2np(res[f"{area}_{eid}_b"])
+                    beta = RRRGD_model.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
+                    res_dict[area][eid] = {"model": {"beta": beta,
+                                                   "U": U,
+                                                   "V": V,
+                                                   "b": b,
+                                                   "best_ncomp": res["V"].shape[0],
+                                                   "best_ncomp_bias": 0,
+                                                   "best_l2": best_l2},
+                                            "r2": r2s[f"{area}_{eid}"] if r2s is not None else np.zeros(len(beta))}
+                else:
+                    eid, k_ = k.split('_')
+                    if (eid in res_dict):
+                        pass
+                    U = tensor2np(res[f"{eid}_U"])
+                    b = tensor2np(res[f"{eid}_b"])
+                    beta = RRRGD_model.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
+                    res_dict[eid] = {"model": {"beta": beta,
+                                               "U": U,
+                                               "V": V,
+                                               "b": b,
+                                               "best_ncomp": best_ncomp,
+                                               "best_ncomp_bias": 0,
+                                               "best_l2": best_l2},
+                                        "r2": r2s[eid] if r2s is not None else np.zeros(len(beta))}
+
+        return res_dict
+
 
 ### in contrary to RRRGD_model where all input variables share the same V
 ### here V depend on input variables

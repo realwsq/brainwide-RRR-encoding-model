@@ -1,4 +1,6 @@
 test_utils/
+paper-reproducible-ephys/
+RE/
 *test.py
 
 # Byte-compiled / optimized / DLL files

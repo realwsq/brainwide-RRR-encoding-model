@@ -1,4 +1,4 @@
-from utils import get_device
+from utils import get_device, log_kv
 from RRRGD import train_model, RRRGD_model, RRRGD_model_Vdep
 from torch import optim
 import numpy as np
@@ -106,6 +106,7 @@ def train_model_hyper_selection(train_data, n_comp_list, l2_list, model_fname,
                     best_mse = mse_now
                     best_n_comp = n_comp
                     best_l2 = l2
+    log_kv(best_n_comp=best_n_comp, best_l2=best_l2, best_mse=best_mse)
 
     ## retrain the RRR model with the selected best set of hyperparameters
     ## get and save the mean validated r2 as the evaluation of performance (fname=f"{model_fname}_R2CV.pk")
@@ -126,6 +127,7 @@ def train_model_hyper_selection(train_data, n_comp_list, l2_list, model_fname,
         r2s_split.append(eval_val['r2s_val'])
         models_split.append(model_i)
     r2s_cv_best = {eid: np.mean([r2s[eid] for r2s in r2s_split], 0) for eid in r2s_split[0]}
+    log_kv(r2s_cv_best = np.mean(np.concatenate([r2s_cv_best[eid] for eid in r2s_cv_best])))
     with open(f"{model_fname}_R2test.pk", "wb") as file:  # hard-coded
         pickle.dump(r2s_cv_best, file)
 
@@ -136,7 +138,11 @@ def train_model_hyper_selection(train_data, n_comp_list, l2_list, model_fname,
         # the evaluation result will not be counted
         train_data[eid]["X"] = (train_data[eid]["Xall"], train_data[eid]["Xall"])
         train_data[eid]["y"] = (train_data[eid]["yall"], train_data[eid]["yall"])
-    model, _ = train_model_main(train_data, best_l2, best_n_comp,
+    if Vdep:
+        RRR_model = RRRGD_model_Vdep(train_data, best_n_comp, l2=best_l2)
+    else:
+        RRR_model = RRRGD_model(train_data, best_n_comp, l2=best_l2)
+    model, _ = train_model_main(train_data, RRR_model,
                                 model_fname=f"{model_fname}.pt",
                                 save=True, **train_params)
 
