@@ -1,0 +1,1 @@
+To execute the example, cd to the main folder and run `python -m example0.train_RRR`

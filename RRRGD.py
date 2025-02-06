@@ -78,6 +78,21 @@ class RRRGD_model():
                                     withbias=withbias)
 
 
+    ### main function of performing prediction from X to y_pred
+    @classmethod
+    def predict(cls, beta, X, tonp=False):
+        """
+        :beta: (N, ncoef, T)
+        :X: (K, T, ncoef)
+        """
+        if tonp == True:
+            X = np2tensor(X)
+            beta = np2tensor(beta)
+        y_pred = torch.einsum("ktc,nct->ktn", X, beta)
+        if tonp == True:
+            y_pred = tensor2np(y_pred)
+        return y_pred
+    
     """
     - data {eid: nparray}
     - output tensor
@@ -86,7 +101,7 @@ class RRRGD_model():
         beta = self.compute_beta(eid)
         X = np2tensor(data[eid]['X'][k]).to(beta.device) # (K, T, ncoef+1)
         y = np2tensor(data[eid]['y'][k]).to(beta.device) # (K, T, N)
-        ypred = torch.einsum("ktc,nct->ktn", X, beta)
+        ypred = RRRGD_model.predict(beta, X)
         return X, y, ypred
     
     """
@@ -112,6 +127,9 @@ class RRRGD_model():
             mses_all[eid] = torch.sum((ypred - y) ** 2, axis=(0, 1))
         return mses_all
 
+    def compute_loss(self, data, k):
+        return self.compute_MSE_RRRGD(data, k)
+
     """
     - output {eid: float}
     """
@@ -135,7 +153,7 @@ class RRRGD_model():
 
     
     @classmethod
-    def params2RRRres(cls, fname, has_area=False):
+    def params2RRRres(cls, fname, has_area=False, Vdep=False):
         res = torch.load(f"{fname}.pt", map_location=torch.device('cpu'))
         best_l2 = res["RRRGD_model"]["l2"]
         best_ncomp = res["RRRGD_model"]["n_comp"]
@@ -159,7 +177,10 @@ class RRRGD_model():
                         pass
                     U = tensor2np(res[f"{area}_{eid}_U"])
                     b = tensor2np(res[f"{area}_{eid}_b"])
-                    beta = RRRGD_model.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
+                    if not Vdep:
+                        beta = RRRGD_model.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
+                    else:
+                        beta = RRRGD_model_Vdep.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
                     res_dict[area][eid] = {"model": {"beta": beta,
                                                    "U": U,
                                                    "V": V,
@@ -174,7 +195,10 @@ class RRRGD_model():
                         pass
                     U = tensor2np(res[f"{eid}_U"])
                     b = tensor2np(res[f"{eid}_b"])
-                    beta = RRRGD_model.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
+                    if not Vdep:
+                        beta = RRRGD_model.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
+                    else:
+                        beta = RRRGD_model_Vdep.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
                     res_dict[eid] = {"model": {"beta": beta,
                                                "U": U,
                                                "V": V,
@@ -213,56 +237,30 @@ class RRRGD_model_Vdep(RRRGD_model):
         # V: model['V'], (ncoef, ncomp, T)
         # b: model[eid+"_b"], (N, 1, T)
 
-    def compute_beta(self, eid, withbias=True):
-        U = self.model[eid + "_U"]  # (N, ncoef, ncomp)
-        V = self.model['V']         # (ncoef, ncomp, T)
-        b = self.model[eid + "_b"]
-
+    
+    """
+    * input has to be tensor
+    """
+    @classmethod
+    def compute_beta_m(cls, U, V, b, withbias=True, tonp=False):
+        if tonp == True:
+            U = np2tensor(U)
+            V = np2tensor(V)
         beta = torch.einsum('ncr,crt->nct', U, V)
         if withbias:
+            if tonp == True:
+                b = np2tensor(b)
             beta = torch.cat((beta, b), 1) # (N, ncoef+1, T)
+        else:
+            pass 
+        if tonp == True:
+            beta = tensor2np(beta)
         
         return beta
-"""
-train the 
-    model: RRRGD_model or its inheritence
-given the
-    train_data: {eid: {X: (train_X, val_X), 
-                       y: (train_y, val_y),
-                       setup: dict(mean_y_TN, std_y_TN, mean_X_Tv, std_X_Tv)}}
-        where eid is the identity of session
-        and train_X, val_X is of shape (#trials, #timesteps, #coefs+1)
-        and train_y, val_y is of shape (#trials, #timesteps, #neurons)
-        mean_y_TN and std_y_TN are the mean and std of y, of shape (T, N)
-        mean_X_Tv and std_X_Tv are the mean and std of X, of shape (T, ncoef)
-- model saved in model_fname
-"""
-def train_model(model, train_data, optimizer, model_fname, save=True):
-    def closure():
-        optimizer.zero_grad()
-        model.train()
-        total_loss = 0.0;
-        train_mses_all = model.compute_MSE_RRRGD(train_data, 0)
-        reg_losses_all = model.regression_loss()
-        for eid in train_mses_all:
-            total_loss += train_mses_all[eid].sum()
-            total_loss += reg_losses_all[eid]
-        total_loss.backward()
-        return total_loss
 
-    optimizer.step(closure)
-
-    model.eval()
-    mses_val = model.compute_MSE_RRRGD(train_data, 1)
-    mses_val = {eid: tensor2np(mses_val[eid]) for eid in mses_val}
-    mse_val_mean = np.sum(np.concatenate([mses_val[eid] for eid in mses_val]))
-    r2s_val = model.compute_R2_RRRGD(train_data, 1)
-    r2_val_mean = np.mean(np.concatenate([r2s_val[k] for k in r2s_val]))
-
-    if save:
-        # Save the best model parameters
-        checkpoint = {"RRRGD_model": model.state_dict(),
-                      "optimizer": optimizer.state_dict()}
-        torch.save(checkpoint, model_fname)
-    
-    return model, {"mses_val":mses_val, "mse_val_mean":mse_val_mean, "r2s_val": r2s_val, "r2_val_mean": r2_val_mean}
+    def compute_beta(self, eid, withbias=True):
+        return RRRGD_model_Vdep.compute_beta_m(self.model[eid + "_U"],
+                                    self.model['V'],
+                                    self.model[eid + "_b"],
+                                    withbias=withbias)
+   

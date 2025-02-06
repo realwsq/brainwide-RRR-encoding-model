@@ -1,10 +1,14 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import pandas as pd
 from sklearn.metrics import r2_score
 
-import os
+import os, pickle
 
+"""
+helping functions
+"""
 def remove_space(s):
     s = s.replace(" ","")
     s = s.replace("'", "")
@@ -24,6 +28,29 @@ def make_folder(folder):
         os.makedirs(folder)
     return folder
 
+def load_or_save_dict(_fname, _main, **params):
+    if os.path.isfile(_fname):
+        with open(_fname, 'rb') as f:
+            res = pickle.load(f)
+    else:
+        res = _main(**params)
+        with open(_fname, 'wb') as f:
+            pickle.dump(res, f)
+    return res
+
+# * cells should not contain nparray
+def load_or_save_df(_fname, _main, **params):
+    if os.path.isfile(_fname):
+        df = pd.read_csv(_fname)
+    else:
+        df = _main(**params)
+        df.to_csv(_fname, index=False,)
+    return df
+
+def create_dict(default, provided):
+    result_dict = default.copy()
+    result_dict.update(provided)
+    return result_dict
 
 def get_device():
     is_cuda = torch.cuda.is_available()
@@ -37,7 +64,6 @@ def get_device():
         print("GPU not available, CPU used")
     return device
 
-
 def np2tensor(v):
     return torch.from_numpy(v)
 
@@ -48,6 +74,8 @@ def tensor2np(v):
     return v.cpu().detach().numpy()
 
 
+
+### compute R2
 def compute_R2_main(y, y_pred, clip=True):
     """
     :y: (K, T, N) or (K*T, N)
