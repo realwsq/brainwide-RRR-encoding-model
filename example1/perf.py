@@ -15,7 +15,6 @@ gp = global_params(which_areas=gp_setup['wa'], var_types=gp_setup['vt'], inc_typ
 local_folder_lf = make_folder(get_data_folder("RRR_local_folder_original"))
 resgood_folder = make_folder("./example1/res_good")
 
-
 Xy_regression = read_Xy_encoding2(gp, verbose=True)
 data_df = load_df_from_Xy_regression_setup(['mfr_task'], Xy_regression)
 RRR_res_df = load_RRRglobal_res(gp)
@@ -59,7 +58,7 @@ RRR_res_df[['eid', 'ni', 'uuids',
             'RRRglobal_r2', 'meanact_r2',]].to_json(os.path.join(local_folder_lf, "RRRglobal_full.json"), index=False)
 
 
-RRR_res_df = load_xpsth_r2(Xy_regression, RRR_res_df, mname="meanact", local_folder=local_folder_lf)
+_ = load_xpsth_r2(Xy_regression, RRR_res_df, mname="meanact", local_folder=local_folder_lf)
 plot_r2_comp(RRR_res_df, nis_incmask, "meanact", "trial-avg", resgood_folder)
 
 RRR_res_df = load_xpsth_r2(Xy_regression, RRR_res_df, mname="taskpsth", local_folder=local_folder_lf, idxs_psth=idxs_task)

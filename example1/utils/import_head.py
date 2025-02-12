@@ -53,7 +53,7 @@ def global_params(which_areas="cortexbwm", var_types="clean", inc_type='standard
         gp['RRRGDglobal_p'] = dict(n_comp_list=list(range(5,6)), l2_list=[75], 
                                    stratify_by=[[0,2],[0],None],)
     elif (which_areas == "cortexbwm") and (var_types == "clean") and (inc_type == "original"):
-        gp['RRRGDglobal_p'] = dict(n_comp_list=list(range(5,6)), l2_list=[75], 
+        gp['RRRGDglobal_p'] = dict(n_comp_list=list(range(4,6)), l2_list=[75], 
                                     lr=1., patience_ncomp = [1,2], pretrained=False,)
     else: 
         assert False, "invalid var_types"
