@@ -1,5 +1,5 @@
 
-import pdb, pickle, os, glob
+import pickle, os
 from tqdm import tqdm
 
 import numpy as np
@@ -42,12 +42,6 @@ def read_Xy_encoding2(gp,
     data_source_folder = get_data_folder("downloaded")
 
     Xy_regression = {}
-    # data_fname_list = glob.glob(os.path.join(data_source_folder, "data_wtonguepaw_*_all_spsT10_False.npz"))
-    # for data_fname in tqdm(data_fname_list, desc=f"read_Xy_encoding over sessions"):
-    #     eid = data_fname.split('.')[0].split('_')[-4]
-    # r2s0 = pickle.load(open("/burg/stats/users/sw3894/bwm_original/cortexbwm/max_corr1.0_min_trials100_remove_block5True_standardize_XTruesmooth_w2.0_min_mfr0.5_max_sp0.5_min_neurons5_transform_mfrNone_z_yTrue_unit_label_min0.0block_side_contrast_level_choice_outcome_wheel_whisker_max_lick/RRRGD_n_comp_list4_5_l2_list75_lr1.0_patience_ncomp1_2_pretrainedFalse_R2test.pk",'rb'))
-    # eid_list = [eid for eid in r2s0]
-    # np.save("example1/utils/eid_list.npy", eid_list)
     eid_list = np.load("example1/utils/eid_list.npy")
     for eid in tqdm(eid_list):
         data_fname = os.path.join(data_source_folder, f"data_wtonguepaw_{eid}_all_spsT10_False.npz")
@@ -65,7 +59,7 @@ def read_Xy_encoding2(gp,
 def read_Xy_encoding(var_list, neural_fname, beh_fname, eid, 
                      smooth_w=1e-3, min_mfr=1, max_sp=1., transform_mfr=None, standardize_y=True, min_trials=1, min_neurons=1,unit_label_min=0.,
                      shift_beh=True, remove_block5=False, standardize_X=False,
-                     exclude_areas=[], include_areas=None, 
+                     exclude_areas=None, include_areas=None, 
                      spsdt=10e-3, verbose=False):
     if verbose:
         print(f"====== {eid} ======")
@@ -126,25 +120,11 @@ def read_Xy_encoding(var_list, neural_fname, beh_fname, eid,
         best_delay["wheel"] = _delay 
         success_best_delay["wheel"] = _success 
         return _beh_processed
-    def _get_wheel_pos(_temp, ks_include):
-        print("wheel pos")
-        wheel_vel = _temp["wheel_vel"][ks_include,:-1]
-        wheel_pos = np.cumsum(wheel_vel, 1)
-        _beh_processed, _delay, _success = _preprocess_movement(wheel_pos)
-        best_delay["wheel"] = _delay 
-        success_best_delay["wheel"] = _success 
-        return _beh_processed
     def _get_lick(_temp, ks_include):
         print("lick")
         _beh_processed, _delay, _success = _preprocess_movement(_temp["licks"][ks_include,:-1])
         best_delay["lick"] = _delay 
         success_best_delay["lick"] = _success 
-        return _beh_processed
-    def _get_whisker(_temp, ks_include):
-        print("whisker")
-        _beh_processed, _delay, _success = _preprocess_movement(_temp["whisker_motion"][ks_include,:-1])
-        best_delay["whisker"] = _delay 
-        success_best_delay["whisker"] = _success 
         return _beh_processed
     def _get_whisker_max(_temp, ks_include):
         _beh_raw = _temp["whisker_motion"][ks_include,:-1]
@@ -152,21 +132,6 @@ def read_Xy_encoding(var_list, neural_fname, beh_fname, eid,
         _beh_processed, _delay, _success = _preprocess_movement(_beh_raw)
         best_delay["whisker_max"] = _delay 
         success_best_delay["whisker_max"] = _success 
-        return _beh_processed
-    def _get_bodyenergy(_temp, ks_include):
-        print("_get_bodyenergy")
-        _beh_processed, _delay, _success = _preprocess_movement(_temp["body_motion"][ks_include,:-1])
-        best_delay["body"] = _delay 
-        success_best_delay["body"] = _success 
-        return _beh_processed
-    def _get_pupil_mean(_temp, ks_include):
-        print("pupil")
-        # pupil might be none
-        _beh_raw = _temp["pupil_diameter"][ks_include,:-1]
-        _beh_raw = np.nanmean(_beh_raw, -1, keepdims=True)
-        _beh_processed, _delay, _success = _preprocess_movement(_beh_raw)
-        best_delay["pupil"] = _delay 
-        success_best_delay["pupil"] = _success 
         return _beh_processed
     var2value = {
         "block": _get_context,
@@ -176,11 +141,7 @@ def read_Xy_encoding(var_list, neural_fname, beh_fname, eid,
         "outcome": _get_reward,
         "wheel": _get_wheel,
         "lick": _get_lick,
-        "whisker": _get_whisker,
-        "whisker_max": _get_whisker_max,
-        "pupil_mean": _get_pupil_mean,
-        "wheel_pos": _get_wheel_pos,
-        "body": _get_bodyenergy}
+        "whisker_max": _get_whisker_max,}
         
     _temp = np.load(beh_fname, allow_pickle=True)
     _temp_neural = np.load(neural_fname, allow_pickle=True)
@@ -218,7 +179,7 @@ def read_Xy_encoding(var_list, neural_fname, beh_fname, eid,
         good_area_l = np.unique(cluster_gs_allN['acronym'])
     else:
         good_area_l = np.asarray(include_areas)
-    if (type(exclude_areas) is list) and (len(exclude_areas) > 0):
+    if (exclude_areas is not None) and (type(exclude_areas) is list) and (len(exclude_areas) > 0):
         good_area_l = good_area_l[~np.isin(good_area_l, exclude_areas)]
     good_area = np.isin(cluster_gs_allN['acronym'], good_area_l)
     cs &= good_area

@@ -3,7 +3,7 @@ from example1.utils.save_and_load_data import iterate_over_eids
 from RRRGD import RRRGD_model
 from RRRGD_main_CV import stratify_data_multi_attempts
 
-import os, pdb
+import os
 import numpy as np
 import pandas as pd
 
@@ -45,6 +45,17 @@ def compute_PSTH(X, y, axis, value):
         print(f"Be careful !! No such condition found {axis}, {value}")
         trials = np.arange(y.shape[0])
     return y[trials].mean(0)
+
+
+def compute_all_psth(X, y, idxs_psth):
+    uni_vs = np.unique(X[:, 0, idxs_psth], axis=0)  # get all the unique task-conditions
+    psth_vs = {}
+    for v in uni_vs:
+        # compute separately for true y and predicted y
+        _psth = compute_PSTH(X, y,
+                                axis=idxs_psth, value=v)  # (T)
+        psth_vs[tuple(v)] = _psth
+    return psth_vs
 
 
 def pred_wPSTH(X_train, y_train, X_test, idxs_psth=None):
@@ -91,7 +102,6 @@ def ensemble_prediction_meanact(Xy_regression, target_eid,
             y_train = Xy_regression[target_eid]['yall']
             y_test = Xy_regression[target_eid]['yall']
         y_pred[target_eid] = np.repeat(np.mean(y_train, 0, keepdims=True), X_test.shape[0], axis=0) # previously used
-        # y_pred[target_eid] = np.zeros_like(y_test)
         return y_pred
     if local_folder is not None: # try to load/ save results to local folder
        _id = remove_space(f"{Xy_regression[target_eid]['yall'].shape}")
@@ -113,9 +123,8 @@ def ensemble_prediction(Xy_regression, RRR_res_df, mname, target_eid,
 
     if cv:
         Xy_regression[target_eid] = stratify_data_multi_attempts(Xy_regression[target_eid], spliti, stratify_by=[[0,2],[0],None], test_size=test_size)
-        # Xy_regression[target_eid] = stratify_data_random(Xy_regression[target_eid], spliti, test_size=test_size)
 
-    if mname in ["RRRglobal"]:
+    if mname == "RRRglobal":
         y_pred = ensemble_prediction_XRR(RRR_res_df, Xy_regression, mname=mname, target_eid=target_eid,
                                          local_folder=local_folder, test_only=cv, spliti=spliti)
     elif mname == "taskpsth":

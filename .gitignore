@@ -1,12 +1,11 @@
 example1/res_good/
-example1/utils/download_data_draft.py
-example1/utils/plot_raster.py
-example1/utils/save_and_load_data_conv.py
+example1/trained_model/
 example2/
 exampleN/
 example_y_fr/
 RRRsteinmetzGD.py
-
+*_draft.py
+*_backup.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

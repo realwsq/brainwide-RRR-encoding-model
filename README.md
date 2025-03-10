@@ -5,19 +5,15 @@
 ## Overview
 
 This project implements a simple but efficient linear encoding model for describing the single-neuron, task-driven responses.
-See `RRR_poster.pdf` for detailed information about the implemented encoding model.
+See (Methods of) [1] for detailed information about the implemented encoding model.
 
 ## Current Status
 
-You can find the minimum code to fit a reduced-rank regression (RRR) encoding model in this repo.
-
 The core functions are implemented in `RRRGD.py` and `RRRGD_main_CV.py`. 
-Check `train_RRR.py` for example usage of fitting the model to an IBL session with 100 trials.
 
-I am
+If you are interested in fitting the model to **your data**, you can check the `example0` folder for a minimum, toy example of fitting a reduced-rank regression (RRR) encoding model to an example IBL session with 100 trials. I attached the data in the `example0` folder so that you can run the code directly and get a hands-on experience.
 
--   📖 preparing more demos and better documentation.
--   💻 preparing to release codes for other linear encoding models (e.g., general linear model, another variant of RRR model).
+If you are interested in fitting the model to [**IBL data**](https://viz.internationalbrainlab.org/), you can check the `example1` folder for a comprehansive example of fitting a reduced-rank regression (RRR) encoding model to a large dataset including 100+ session Neuropixels recordings of 10,000+ neurons. 
 
 In case you have any questions, please get in touch with me: shuqi.wang@epfl.ch
 
@@ -29,3 +25,7 @@ In case you have any questions, please get in touch with me: shuqi.wang@epfl.ch
 ---
 
 Thank you for your interest! Stay tuned for more updates. 
+
+
+### References:
+[1] Posani, L., Wang, S., Muscinelli, S. P., Paninski, L., & Fusi, S. (2025). Rarely categorical, always high-dimensional: how the neural code changes along the cortical hierarchy. bioRxiv, 2024-11.

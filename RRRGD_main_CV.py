@@ -1,10 +1,9 @@
 from utils import get_device, log_kv
-from RRRGD import RRRGD_model, RRRGD_model_Vdep
-from RRRsteinmetzGD import RRRsteinmetzGD_model
+from RRRGD import RRRGD_model
 from torch import optim
 import torch
 import numpy as np
-import pickle, pdb
+import pickle
 from sklearn.model_selection import train_test_split
 
 from utils import tensor2np
@@ -113,8 +112,8 @@ def stratify_data_multi_attempts(data, spliti, stratify_by=[None], test_size=0.3
 """
 ---- inputs ---
 train_data: {eid: {
-                    "Xall": (K,T,ncoef+1), # normalized, 1 expanded, 
-                    "yall": (K,T,N), # normalized
+                    "Xall": (K,T,ncoef+1), # normalized across trials, 1 expanded at the end for the learning of the bias, 
+                    "yall": (K,T,N), # normalized across trials
                     "setup": dict(mean_y_TN, std_y_TN, mean_X_Tv, std_X_Tv)
                     }}
     where eid is the identity of session
@@ -131,7 +130,6 @@ r2s_cv_best: {eid: (N)} mean validated r2 as the evaluation of performance for e
 model: trained model using the whole dataset
 """
 def train_model_hyper_selection(train_data, n_comp_list, l2_list, model_fname,
-                                Vdep=False, RRRsteinmetz=False,
                                 lr=1., max_iter=500, tolerance_grad=1e-7, tolerance_change=1e-9, history_size=100, line_search_fn=None,
                                 nsplit=3, test_size=0.3, stratify_by=[None],
                                 ):
@@ -142,12 +140,7 @@ def train_model_hyper_selection(train_data, n_comp_list, l2_list, model_fname,
                         history_size=history_size, line_search_fn=line_search_fn)
     
     def _get_model(ncomp, l2):
-        if Vdep:
-            RRR_model = RRRGD_model_Vdep(train_data, ncomp, l2=l2)
-        elif RRRsteinmetz:
-            RRR_model = RRRsteinmetzGD_model(train_data, ncomp, l2=l2)
-        else:
-            RRR_model = RRRGD_model(train_data, ncomp, l2=l2)
+        RRR_model = RRRGD_model(train_data, ncomp, l2=l2)
         return RRR_model
 
     #### select the optimal number of components

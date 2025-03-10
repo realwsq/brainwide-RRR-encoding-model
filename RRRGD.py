@@ -1,5 +1,5 @@
 import numpy as np
-import os, pickle, pdb
+import os, pickle
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -9,7 +9,7 @@ from utils import np2tensor, np2param, tensor2np, compute_R2_main
 # K: number of trials
 # T: number of timesteps
 # N: number of neurons 
-# ncoef: number of coefficients
+# ncoef: number of coefficients/ variables
 class RRRGD_model():
     def __init__(self, train_data, ncomp, l2=0.):
         self.n_comp = ncomp
@@ -99,8 +99,12 @@ class RRRGD_model():
     """
     def predict_y(self, data, eid, k):
         beta = self.compute_beta(eid)
-        X = np2tensor(data[eid]['X'][k]).to(beta.device) # (K, T, ncoef+1)
-        y = np2tensor(data[eid]['y'][k]).to(beta.device) # (K, T, N)
+        if k is not None:
+            X = np2tensor(data[eid]['X'][k]).to(beta.device) # (K, T, ncoef+1)
+            y = np2tensor(data[eid]['y'][k]).to(beta.device) # (K, T, N)
+        else:
+            X = np2tensor(data[eid]['Xall']).to(beta.device) # (K, T, ncoef+1)
+            y = np2tensor(data[eid]['yall']).to(beta.device) # (K, T, N)
         ypred = RRRGD_model.predict(beta, X)
         return X, y, ypred
     
@@ -153,7 +157,7 @@ class RRRGD_model():
 
     
     @classmethod
-    def params2RRRres(cls, fname, has_area=False, Vdep=False):
+    def params2RRRres(cls, fname, has_area=False):
         res = torch.load(f"{fname}.pt", map_location=torch.device('cpu'))
         best_l2 = res["RRRGD_model"]["l2"]
         best_ncomp = res["RRRGD_model"]["n_comp"]
@@ -169,98 +173,19 @@ class RRRGD_model():
                 pass
             else:
                 V = tensor2np(res['V'])
-                if has_area:
-                    area, eid, k_ = k.split("_")
-                    if not (area in res_dict):
-                        res_dict[area] = {}
-                    if (eid in res_dict[area]):
-                        pass
-                    U = tensor2np(res[f"{area}_{eid}_U"])
-                    b = tensor2np(res[f"{area}_{eid}_b"])
-                    if not Vdep:
-                        beta = RRRGD_model.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
-                    else:
-                        beta = RRRGD_model_Vdep.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
-                    res_dict[area][eid] = {"model": {"beta": beta,
-                                                   "U": U,
-                                                   "V": V,
-                                                   "b": b,
-                                                   "best_ncomp": res["V"].shape[0],
-                                                   "best_ncomp_bias": 0,
-                                                   "best_l2": best_l2},
-                                            "r2": r2s[f"{area}_{eid}"] if r2s is not None else np.zeros(len(beta))}
-                else:
-                    eid, k_ = k.split('_')
-                    if (eid in res_dict):
-                        pass
-                    U = tensor2np(res[f"{eid}_U"])
-                    b = tensor2np(res[f"{eid}_b"])
-                    if not Vdep:
-                        beta = RRRGD_model.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
-                    else:
-                        beta = RRRGD_model_Vdep.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
-                    res_dict[eid] = {"model": {"beta": beta,
-                                               "U": U,
-                                               "V": V,
-                                               "b": b,
-                                               "best_ncomp": best_ncomp,
-                                               "best_ncomp_bias": 0,
-                                               "best_l2": best_l2},
-                                        "r2": r2s[eid] if r2s is not None else np.zeros(len(beta))}
+                eid, k_ = k.split('_')
+                if (eid in res_dict):
+                    pass
+                U = tensor2np(res[f"{eid}_U"])
+                b = tensor2np(res[f"{eid}_b"])
+                beta = RRRGD_model.compute_beta_m(U, V, b, tonp=True)  # (N, ncoef+1, T)
+                res_dict[eid] = {"model": {"beta": beta,
+                                            "U": U,
+                                            "V": V,
+                                            "b": b,
+                                            "best_ncomp": best_ncomp,
+                                            "best_l2": best_l2},
+                                    "r2": r2s[eid] if r2s is not None else np.zeros(len(beta))}
 
         return res_dict
 
-
-### in contrary to RRRGD_model where all input variables share the same V
-### here V depend on input variables
-class RRRGD_model_Vdep(RRRGD_model):
-    def __init__(self, train_data, ncomp, l2=0.):
-        RRRGD_model.__init__(self,train_data, ncomp, l2=l2)
-
-        np.random.seed(0)
-        self.model = {}
-        for eid in train_data:
-            _X = train_data[eid]['X'][0] # (K,T,ncoef+1), the last coef is the bias term
-            _y = train_data[eid]['y'][0] # (K,T,N)
-            _, T, ncoef = _X.shape
-            ncoef -= 1 # -1 is for the concatenated 1s in X
-            _, T, N = _y.shape
-            U = np.random.normal(size=(N, ncoef, ncomp))/np.sqrt(T*ncomp) 
-            V = np.random.normal(size=(ncoef, ncomp, T))/np.sqrt(T*ncomp)
-            b = np.expand_dims(_y.mean(0).T, 1)
-            b = np.ascontiguousarray(b)
-            self.model[eid+"_U"]=np2param(U)
-            self.model[eid+"_b"]=np2param(b)
-        self.model['V'] = np2param(V) # V shared across sessions
-        self.model = nn.ParameterDict(self.model)
-        # U: model[eid+"_U"], (N, ncoef, ncomp)
-        # V: model['V'], (ncoef, ncomp, T)
-        # b: model[eid+"_b"], (N, 1, T)
-
-    
-    """
-    * input has to be tensor
-    """
-    @classmethod
-    def compute_beta_m(cls, U, V, b, withbias=True, tonp=False):
-        if tonp == True:
-            U = np2tensor(U)
-            V = np2tensor(V)
-        beta = torch.einsum('ncr,crt->nct', U, V)
-        if withbias:
-            if tonp == True:
-                b = np2tensor(b)
-            beta = torch.cat((beta, b), 1) # (N, ncoef+1, T)
-        else:
-            pass 
-        if tonp == True:
-            beta = tensor2np(beta)
-        
-        return beta
-
-    def compute_beta(self, eid, withbias=True):
-        return RRRGD_model_Vdep.compute_beta_m(self.model[eid + "_U"],
-                                    self.model['V'],
-                                    self.model[eid + "_b"],
-                                    withbias=withbias)
-   

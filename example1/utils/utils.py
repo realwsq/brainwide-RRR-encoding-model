@@ -1,7 +1,6 @@
-import os, pdb
+import os
 import numpy as np
 from scipy import signal
-from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -45,26 +44,6 @@ def find_bestdelay_byCC(beh, act, plot=False):
     return best_delay, success, CCs
 
 
-
-def compute_PSTH(X, y, axis, value):
-    trials = np.all(np.isclose(X[:, 0, axis], value), axis=-1)
-    if np.sum(trials) == 0:
-        print(f"Be careful !! No such condition found {axis}, {value}")
-        trials = np.arange(y.shape[0])
-    return y[trials].mean(0)
-
-
-def compute_all_psth(X, y, idxs_psth):
-    uni_vs = np.unique(X[:, 0, idxs_psth], axis=0)  # get all the unique task-conditions
-    psth_vs = {}
-    for v in uni_vs:
-        # compute separately for true y and predicted y
-        _psth = compute_PSTH(X, y,
-                                axis=idxs_psth, value=v)  # (T)
-        psth_vs[tuple(v)] = _psth
-    return psth_vs
-
-
 # ### compare the single-trial performance
 def plot_r2_comp(RRR_res_df, nis_incmask, mname1, mname1_disp,
                  resgood_folder):
@@ -100,23 +79,21 @@ def p_to_text(p):
         return 'ns P=%.2f' % p
 
 
-def import_areagroup():
+def get_area_anatomical_info_Allen():
 
-    ## Hierarchy for ranking
-    # Hierarchy XJW
-    H1 = pd.read_csv('./example1/utils/area_list.csv', header=None).to_dict()[0]
-    for key in H1:
-        H1[key] = [H1[key]]
-
-    ## area2area connectivity
-    conn_mat = pd.read_csv('./example1/utils/conn_cxcx.csv', header=None)
-    conn_mat = conn_mat.values
+    ## Hierarchy 
     conn_area_list = pd.read_csv('./example1/utils/area_list.csv', header=None).values[:,0]
     conn_i2a = {i: a for i, a in enumerate(conn_area_list)}
     conn_a2i = {a: i for i, a in enumerate(conn_area_list)}
 
 
-    hierarchy_byHarris = {
+    ## area2area connectivity
+    conn_mat = pd.read_csv('./example1/utils/conn_cxcx.csv', header=None)
+    conn_mat = conn_mat.values
+
+
+    ## Module 
+    mod2area = {
         "prefrontal": ["FRP", "ACAd", "ACAv", "PL", "ILA", "ORBl", "ORBm", "ORBvl"], 
         "lateral": ["AId", "AIv", "AIp", "GU", "VISC", "TEa", "PERI", "ECT"], 
         "somatomotor": ["SSs", "SSp-bfd", "SSp-tr", "SSp-ll", "SSp-ul", "SSp-un", "SSp-n", "SSp-m", "MOp", "MOs", ], 
@@ -124,12 +101,14 @@ def import_areagroup():
         "medial": ["VISa", "VISam", "VISpm", "RSPagl", "RSPd", "RSPv"], 
         "auditory": ["AUDd", "AUDp", "AUDpo", "AUDv"], 
     }
-    area2ci_byHarris = {}
-    for hi in hierarchy_byHarris:
-        for a in hierarchy_byHarris[hi]:
-            area2ci_byHarris[a] = hi
+    area2mod = {}
+    for mod in mod2area:
+        for a in mod2area[mod]:
+            area2mod[a] = mod
 
     return {"cortical_area_list": conn_area_list, 
-            "hierarchy":[H1], 
-            "conn_mat": [conn_mat, conn_i2a, conn_a2i],
-            "hierarchy_byHarris": [hierarchy_byHarris, area2ci_byHarris]}
+            "conn_mat": conn_mat, 
+            "area2H": conn_a2i,
+            "H2area": conn_i2a,
+            "mod2area": mod2area,
+            "area2mod": area2mod}
