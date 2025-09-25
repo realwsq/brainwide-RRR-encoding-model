@@ -1,7 +1,5 @@
 # brainwide-RRR-encoding-model
 
-🚧 *This project is under active development. Stay tuned for updates!* 🚧
-
 ## Overview
 
 This project implements a simple but efficient linear encoding model for describing the single-neuron, task-driven responses.
@@ -16,15 +14,6 @@ If you are interested in fitting the model to **your data**, you can check the `
 If you are interested in fitting the model to [**IBL data**](https://viz.internationalbrainlab.org/), you can check the `example1` folder for a comprehansive example of fitting a reduced-rank regression (RRR) encoding model to a large dataset including 100+ session Neuropixels recordings of 10,000+ neurons. 
 
 In case you have any questions, please get in touch with me: shuqi.wang@epfl.ch
-
-## How to Stay Updated
-
--  ⁠🌟 *Star this repository* to receive notifications about the latest updates.
--  ⁠📧 *Watch* the repository for detailed development progress.
-
----
-
-Thank you for your interest! Stay tuned for more updates. 
 
 
 ### References:

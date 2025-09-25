@@ -1,10 +1,10 @@
-import torch
-import torch.nn as nn
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score
 
 import os, pickle
+import torch
+import torch.nn as nn
 
 """
 helping functions
@@ -55,10 +55,12 @@ def create_dict(default, provided):
 def get_device():
     is_cuda = torch.cuda.is_available()
 
-    # If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
+    # If we have a GPU available, we'll set our device to GPU. 
+    # We'll use this device variable later in our code.
     if is_cuda:
-        device = torch.device("cuda")
-        print("GPU is available")
+        gpu_id = 0
+        device = torch.device(f'cuda:{gpu_id}')
+        print(f"GPU:{gpu_id} is available")
     else:
         device = torch.device("cpu")
         print("GPU not available, CPU used")

@@ -1,23 +1,23 @@
-from example1.utils.import_head import global_params
-from example1.utils.save_and_load_data import read_Xy_encoding2, load_df_from_Xy_regression_setup, get_data_folder
-from example1.utils.train_and_load_model import load_RRRglobal_res
+from example1.utils.save_and_load_data import read_Xy_encoding2, load_df_from_Xy_regression_setup, data_params
+from example1.utils.train_and_load_model import load_RRRglobal_res, RRRglobal_params
 from example1.utils.analyze_perf_utils import load_xpsth_r2
+from utils import make_folder
 
 import os
 
 # folder where the dataFrame format of the trained model will be saved to
-local_folder_lf = "./example1/trained_model"
+local_folder_lf = make_folder("./example1/trained_model")
 fname = os.path.join(local_folder_lf, "RRRglobal_full.json")
 
 
 
 ### load the data and the trained model
 # load the trained model
-gp_setup = dict(wa = 'cortexbwm', vt='clean', it=f"standard")
-gp = global_params(which_areas=gp_setup['wa'], var_types=gp_setup['vt'], inc_type=gp_setup['it'])
-RRR_res_df = load_RRRglobal_res(gp)
+data_p = data_params(which_areas='all_but_invalid')
+RRRGD_p = RRRglobal_params(sample=False)
+RRR_res_df = load_RRRglobal_res(data_p, RRRGD_p)
 # to merge the uuids, acronym, mfr_task from the data to RRR_res_df
-Xy_regression = read_Xy_encoding2(gp, verbose=True)
+Xy_regression = read_Xy_encoding2(data_p, verbose=True)
 data_df = load_df_from_Xy_regression_setup(['mfr_task'], Xy_regression)
 RRR_res_df = RRR_res_df.merge(data_df, left_on=['eid', 'ni'], right_on=['eid', 'ni'])
 

@@ -1,4 +1,5 @@
 from example1.utils.utils import get_area_anatomical_info_Allen, p_to_text
+from utils import make_folder
 
 import os
 import numpy as np
@@ -8,15 +9,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-
-# folder where the trained model is saved
-local_folder_lf = "./example1/trained_model"
 # load the trained model
-RRR_res_df = pd.read_json(os.path.join(local_folder_lf, "RRRglobal_full.json"))
+RRR_res_df = pd.read_json("./example1/trained_model_copy/RRRglobal_full.json")
 # input variables used in the model
-vars_list = ['block', 'side', 'contrast_level', 'choice', "outcome", "wheel", "whisker_max", "lick"]
+vars_list = ['block', 'side', 'contrast', 'choice', "outcome", "wheel", "whisker", "lick"]
 # folder where the results will be saved
-resgood_folder = "./example1/results"
+resgood_folder = make_folder("./example1/results_copy")
 
 # load the anatomical information that will be used later
 area_atm_info = get_area_anatomical_info_Allen()
@@ -29,9 +27,9 @@ area2H = area_atm_info['area2H'] # area to hierarchy mapping
 
 # only include neurons whose R2 pass the minimmum \Delta R2 threshold
 #                       and of the cortical areas
-inc_param=dict(min_N=20, min_r2=0.015)  # here we lower min_N from 50 to 20 to show selectivity for more areas
-RRR_res_df['RRRglobal_r2inc'] = RRR_res_df["RRRglobal_r2"] - RRR_res_df['meanact_r2']
-nis_incmask = RRR_res_df['RRRglobal_r2inc'] > inc_param['min_r2']
+inc_param=dict(min_N=20, min_deltaR2=0.015)  # here we lower min_N from 50 to 20 to show selectivity for more areas
+RRR_res_df['RRRglobal_deltaR2'] = RRR_res_df["RRRglobal_r2"] - RRR_res_df['meanact_r2']
+nis_incmask = RRR_res_df['RRRglobal_deltaR2'] > inc_param['min_deltaR2']
 nis_incmask_ctx = nis_incmask & RRR_res_df.acronym.isin(conn_area_list_byH)
 # sort areas by hierarchy
 area_order_H = np.array([a for a in conn_area_list_byH if np.sum((nis_incmask_ctx)&(RRR_res_df.acronym==a))>=inc_param['min_N']])
@@ -91,7 +89,10 @@ sel_areas = (sel_areas - np.mean(sel_areas,0))/np.std(sel_areas, 0)
 area_pair_res = dict(conn=[], pairs=[], sim=[])
 for i in range(len(area_order_H)):
     for j in range(i+1, len(area_order_H)):
-        area_pair_res['conn'].append(conn_mat[area2H[area_order_H[i]], area2H[area_order_H[j]]])
+        # correction: 07/05/2025
+        conn = (conn_mat[area2H[area_order_H[i]], area2H[area_order_H[j]]] + conn_mat[area2H[area_order_H[j]], area2H[area_order_H[i]]]) / 2
+        area_pair_res['conn'].append(conn) 
+        # area_pair_res['conn'].append(conn_mat[area2H[area_order_H[i]], area2H[area_order_H[j]]])
         a = sel_areas[i]; b = sel_areas[j]
         area_pair_res['sim'].append(np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b)))
         area_pair_res['pairs'].append([area_order_H[i], area_order_H[j]])

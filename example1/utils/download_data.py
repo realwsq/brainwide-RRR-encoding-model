@@ -252,7 +252,7 @@ def filter_trials_func(trials,
     if remove_zerocontrast:
         zc_index2 = np.where((trials.contrastLeft == 0.) | (trials.contrastRight == 0.))[0]
         index_toremove += [zc_index2]
-    index_toremove = np.concatenate(index_toremove, axis=0)
+    index_toremove = np.unique(np.concatenate(index_toremove, axis=0))
     print(f"{len(index_toremove)} trials being dropped out of {trials.shape[0]}")
 
     return trials.drop(index=index_toremove)

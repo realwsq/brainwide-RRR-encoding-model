@@ -1,5 +1,5 @@
 import numpy as np
-import pickle
+import pickle, os
 from utils import remove_space
 from RRRGD_main_CV import train_model_hyper_selection
 
@@ -15,7 +15,9 @@ from RRRGD_main_CV import train_model_hyper_selection
 #               }}
 data = pickle.load(open("example0/example_data.pk", 'rb'))
 RRR_p = dict(n_comp_list=[3,4,5], l2_list=[10, 25, 50,100,], lr=1.0)
-RRRGD_fname = remove_space(f"example0/RRRGD_{RRR_p}")
+RRRGD_folder = "example0/trained_model"
+os.makedirs(RRRGD_folder, exist_ok=True)
+RRRGD_fname = remove_space(os.path.join(RRRGD_folder, f"RRRGD_{RRR_p}"))
 CV_p = dict(nsplit=3, test_size=0.3, stratify_by=[None])
 
 res = train_model_hyper_selection(data, model_fname=RRRGD_fname,

@@ -1,5 +1,12 @@
+example1/data_IBL/
+example1/data_IBL_180/
 example1/res_good/
+example1/results/clus/
+example1/results/clus_ap_sus_clus_not_removed/
+example1/results/clus_module/
+example1/results_copy/
 example1/trained_model/
+example1/trained_model_copy/
 example2/
 exampleN/
 example_y_fr/

@@ -14,14 +14,43 @@ def get_data_folder(*args):
     subfolder = ""
     for arg in args:
         subfolder += f"{arg}"
-    data_folder = make_folder(os.path.join(f"/burg/stats/users/sw3894/bwm_original/cortexbwm/", remove_space(subfolder)))
+    data_folder = make_folder(os.path.join(f"/home/shuqi/EPFL/research/IBL/brainwide-RRR-encoding-model/example1/data_IBL_180/", remove_space(subfolder)))
     return data_folder
+
+def get_processed_data_folder(data_p):
+    return get_data_folder(data_p['id'])
+
+def data_params(which_areas="all_but_invalid"):
+    gp = dict(id=which_areas) # used this id to identify the processed data folder
+    if which_areas == "all_but_invalid":
+        # Area List to EXCLUDE (neurons from these areas will be excluded from regression)
+        gp['al_exclude'] = ['root', 'void', 'y'] 
+    elif which_areas == "cortexbwm":
+        # Area List to INCLUDE (neurons from these areas will be included from regression)
+        gp['al_include'] = ["VISp", "AUDp", "SSp-ll", "AUDd", "SSp-n", "SSp-ul", "AIp",
+            "SSp-m", "SSp-un", "SSp-bfd", "VISl", "AUDv", "SSs", "VISC", "SSp-tr",
+            "VISli", "MOp", "VISrl", "VISpl", "RSPv", "RSPd", "GU", "RSPagl", "PERI",
+            "ECT", "VISal", "ILA", "ORBl", "AId", "VISpm", "ORBm", "PL", "VISpor", "FRP",
+            "AUDpo", "TEa", "VISa", "VISam", "MOs", "ORBvl", "ACAv", "ACAd", "AIv"]
+    else: 
+        assert False, "invalid which_area"
+
+    # X, y preprocessing hyperparameters
+    gp['X_inc'] = {"min_trials": 100, "remove_block5": True, "standardize_X": True}
+    gp['y_inc'] = {'smooth_w':2., 'min_mfr':.5, 'max_sp': 0.5, "min_neurons":5,
+            "transform_mfr": None, "standardize_y": True, "unit_label_min": 0.}
+
+    # Variable List: included input variables for the regression
+    gp["vl"] = ['block', 'side', 'contrast_level', 'choice', "outcome", "wheel", "whisker_max", "lick",]
+    
+
+    return gp
 
 
 """
 save and load data
 """
-def read_Xy_encoding2(gp, 
+def read_Xy_encoding2(data_p, 
                       verbose=False):
     def _load_one_eid(eid):
         fname2 = os.path.join(data_2_folder, remove_space(f"Xy_regression_wtonguepaw_{eid}_all.pkl"))
@@ -29,20 +58,20 @@ def read_Xy_encoding2(gp,
             with open(fname2, "rb") as f:
                 Xy_regression_eid = pickle.load(f)
         else:    
-            Xy_regression_eid = read_Xy_encoding(gp['vl'], neural_fname, beh_fname, eid, 
-                                                exclude_areas=gp['al_exclude'] if 'al_exclude' in gp else None,
-                                                include_areas=gp['al_include'] if 'al_include' in gp else None,
-                                                **gp['X_inc'], **gp['y_inc'],
+            Xy_regression_eid = _read_Xy(data_p['vl'], neural_fname, beh_fname, eid, 
+                                                exclude_areas=data_p['al_exclude'] if 'al_exclude' in data_p else None,
+                                                include_areas=data_p['al_include'] if 'al_include' in data_p else None,
+                                                **data_p['X_inc'], **data_p['y_inc'],
                                                 verbose=verbose)
             with open(fname2, "wb") as f:
                 pickle.dump(Xy_regression_eid, f)
         return Xy_regression_eid
     print("start to load data")
-    data_2_folder = get_data_folder(gp['X_inc'], gp['y_inc'], gp['vl'])
+    data_2_folder = get_processed_data_folder(data_p)
     data_source_folder = get_data_folder("downloaded")
 
     Xy_regression = {}
-    eid_list = np.load("example1/utils/eid_list.npy")
+    eid_list = list(np.load("example1/utils/eid_list.npy"))
     for eid in tqdm(eid_list):
         data_fname = os.path.join(data_source_folder, f"data_wtonguepaw_{eid}_all_spsT10_False.npz")
         neural_fname = beh_fname = data_fname
@@ -52,11 +81,12 @@ def read_Xy_encoding2(gp,
         else:
             print(f"no data in the eid {eid}")
             pass
+    
     print("finish loading data")
     return Xy_regression
 
     
-def read_Xy_encoding(var_list, neural_fname, beh_fname, eid, 
+def _read_Xy(var_list, neural_fname, beh_fname, eid, 
                      smooth_w=1e-3, min_mfr=1, max_sp=1., transform_mfr=None, standardize_y=True, min_trials=1, min_neurons=1,unit_label_min=0.,
                      shift_beh=True, remove_block5=False, standardize_X=False,
                      exclude_areas=None, include_areas=None, 

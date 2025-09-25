@@ -1,5 +1,6 @@
 from example1.utils.download_data import load_data_from_pid, filter_trials_func, filter_neurons_func
 from example1.utils.save_and_load_data import get_data_folder
+from utils import make_folder
 
 import numpy as np
 import os, glob, shutil
@@ -8,7 +9,7 @@ from one.api import ONE
 from iblatlas.atlas import AllenAtlas
 
 
-cache_folder = "/burg/stats/users/sw3894/ibl_cache/" # change to your own cache folder
+cache_folder = make_folder("/home/shuqi/EPFL/research/IBL/brainwide-RRR-encoding-model/example1/IBL_cache") # change to your own cache folder
 one = ONE(base_url='https://openalyx.internationalbrainlab.org',
           password='international', 
           cache_dir=cache_folder)
@@ -21,7 +22,7 @@ Twindow = 1.2; # sec
 t_bf_stimOn = 0.3 # sec
 spsdt = 10e-3  # sec
 only_label1_neuron = False
-data_folder = get_data_folder('downloaded')
+data_folder = "/home/shuqi/EPFL/research/IBL/brainwide-RRR-encoding-model/example1/data_IBL_180/downloaded"
 
 # we want to search for probe insertions with the following areas recorded
 areas_all = ["VISp", "AUDp", "SSp-ll", "AUDd", "SSp-n", "SSp-ul", "AIp",
@@ -40,7 +41,7 @@ for area_acronym in areas_all:
     for pidi, pid_ in enumerate(pids_area):
         if _pidi_valid >= _npids:
             break
-
+        
         [eid, pname] = one.pid2eid(pid_)
 
         fname = os.path.join(data_folder, f"data_wtonguepaw_{eid}_all_spsT{int(spsdt * 1e3)}_{only_label1_neuron}.npz")

@@ -1,17 +1,15 @@
 from example1.utils.utils import plot_r2_comp
+from utils import make_folder
 
 import os
 import numpy as np
 import pandas as pd
 
 
-# folder where the trained model is saved
-local_folder_lf = "./example1/trained_model"
 # load the trained model
-RRR_res_df = pd.read_json(os.path.join(local_folder_lf, "RRRglobal_full.json"))
-import pdb; pdb.set_trace()
+RRR_res_df = pd.read_json("./example1/trained_model/RRRglobal_full.json")
 # folder where the results will be saved
-resgood_folder = "./example1/results"
+resgood_folder = make_folder("./example1/results")
 
 
 # only include neurons whose R2 pass the minimmum \Delta R2 threshold
