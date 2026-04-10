@@ -1,20 +1,43 @@
-This subfolder includes a **complete** example of fitting a reduced-rank regression (RRR) model to multiple sessions of IBL brain-wide-map dataset.
+# Brain-Wide RRR Encoding Model — IBL Example
+ 
+A **complete** example of fitting a reduced-rank regression (RRR) model to multiple sessions of the IBL brain-wide-map dataset, as used in the paper:
+ 
+**"Rarely categorical, highly separable representations along the cortical hierarchy"**
+L. Posani\*, S. Wang\*, S. Muscinelli, L. Paninski$, and S. Fusi$ (2026)
+ 
+\*Equal contribution  $Co-senior authors
 
-Running this example from scratch requires the following steps:
-1. Download sessions using IBL public API
+## Overview
+
+This subfolder walks through the full pipeline for training and exporting the RRR model:
+ 
+1. Download sessions using the IBL public API
 2. Train the RRR model
 3. Export the trained model to a DataFrame
 4. Examine the trained model (figure scripts)
-
-Steps 1–3 can take quite long (~ 3 days) to complete, therefore we attach a pre-trained model in `./trained_RRR_model/` to save the effort. 
+ 
+Steps 1–3 can take a long time (~3 days) to complete end-to-end. To save effort, we provide a pre-trained model in `./trained_RRR_model/` — you can skip directly to step 4 if you only want to reproduce the analyses.
+ 
+The notation and parameter names follow the conventions established in the main text and Methods section of the paper. Please refer to the paper for detailed definitions and further context.
+ 
+Related resources:
+- **clustering analysis of RRR-estimated single-neuron selectivity** — [realwsq/clustering-analysis](https://github.com/realwsq/clustering-analysis)
+- **Decoding and dimensionality analyses** — [lposani/decodanda](https://github.com/lposani/decodanda)
 
 > **Note:** The pre-trained model is large and thus we used [Git LFS](https://git-lfs.com). Install it (`git lfs install`) before cloning, or run `git lfs pull` after cloning to fetch it.
 
-Next, we introduce the pipeline step-by-step. Please refer to the corresponding scripts [1] for more detailed information.
-
----
-
-### Prerequisites
+## Getting Started
+ 
+This repository uses [Git LFS](https://git-lfs.com) to track the pre-trained RRR model, which is large. Install Git LFS before cloning:
+ 
+```bash
+git lfs install
+git clone <repository-url>
+```
+ 
+If you have already cloned the repository without Git LFS, run `git lfs pull` to fetch the model file.
+ 
+### Dependencies
 
 **Python >= 3.10** is required. Install all dependencies before running any script:
 
@@ -29,42 +52,56 @@ pip install torch numpy scipy pandas scikit-learn tqdm
 pip install matplotlib seaborn
 ```
 
----
+## Pipeline
+ 
+### Step 1 — Download sessions from the IBL public API
+ 
+```bash
+python step1_IBL_downloaddata.py
+```
+ 
+Downloaded data will be saved in `./data/downloaded/`.
+ 
+### Step 2 — Train the RRR model
+ 
+```bash
+python step2_train_RRR.py
+```
+ 
+This script first pre-processes the downloaded data (see Methods of the paper for details) and constructs two matrices:
+ 
+- `Xall` — trial-aligned, time-varying input variables, shape `[n_trials, n_timesteps, n_vars]`
+- `yall` — trial-aligned, time-varying neural activity, shape `[n_trials, n_timesteps, n_neurons]`
+ 
+It then fits an RRR model to these matrices. The optimal rank and L2 regularization penalty are selected via 3-fold cross-validation across trials. The trained model is saved to `./trained_RRR_model/RRRGD/`.
+ 
+### Step 3 — Export the trained model to a DataFrame
+ 
+```bash
+python step3_save_trainedRRR_2_df.py
+```
+ 
+This produces a DataFrame version of the trained model, saved as `./trained_RRR_model/RRR_selectivity.json`. Each row corresponds to a neuron, with the following columns:
+ 
+- `uuids` — unique neuron identifier
+- `eid` — session identifier
+- `acronym` — brain region of the neuron
+- `RRR_r2` — average 3-fold cross-validated R² of the RRR model
+- `RRR_beta` — time-varying coefficients of the neuron, shape `(n_vars+1, n_timesteps)`. The first `n_vars` rows are the input-variable coefficients; the last row is the bias term.
+- `RRR_U` — per-neuron loadings of the temporal basis vectors, shape `(n_vars, n_components)`, where `n_components` is the rank of the RRR model.
+- `RRR_V` — shared temporal basis vectors (same across all neurons), shape `(n_components, n_timesteps)`.
+- `RRR_b` — per-neuron time-varying biases, shape `(n_timesteps,)`. These should be close to zero if the input variables are normalized.
+- `null_r2` — average 3-fold cross-validated R² of a baseline null model that is agnostic to input variables (only time in trial).
 
-### step 1 - downloading sessions using IBL public API:
-
-- run `python step1_IBL_downloaddata.py`. The downloaded data will be saved in `./data/downloaded/`.
-
----
-
-### step 2 - training the RRR model:
-
-- run `python step2_train_RRR.py`. The script will first pre-process the downloaded data (see Methods of [1] for more information) and compose two matrices (Xall of trial-aligned, time-varying input variables (shape [n_trials, n_timesteps, n_vars]) and yall of trial-aligned, time-varying neural activity (shape [n_trials, n_timesteps, n_neurons])); and then fit a RRR model given the two matrices. The optimal rank and the optimal l2 regularization penalty are selected by a 3-fold cross-validation technique across trials. The trained RRR model will be saved in `./trained_RRR_model/RRRGD/`.
-
----
-
-### step 3 - exporting the trained model to a DataFrame:
-
-- run `python step3_save_trainedRRR_2_df.py` to get the DataFrame format of the trained model. The file will be saved as `./trained_RRR_model/RRR_selectivity.json`. Each row of the DataFrame corresponds to a neuron, and the columns include the following information. The DataFrame can be used for further analysis.
-    - `uuids`: the unique id of the neuron
-    - `eid`: the session id
-    - `acronym`: the brain region of the neuron
-    - `RRR_r2`: the average of the 3-fold cross-validated R² of the RRR model
-    - `RRR_beta`: the time-varying coefficients of the neuron in the RRR model. The time-varying coefficients can be seen as a matrix of the shape (n_vars+1, n_timesteps) where the first n_vars rows are the coefficients of the input variables and the last row is the bias term.
-    - `RRR_U`: the loadings of the temporal basis vectors. The loadings (for each neuron) is a matrix of the shape (n_vars, n_components) where n_components is the rank of the RRR model.
-    - `RRR_V`: the learned shared temporal basis vectors (same across all neurons). The shared temporal basis vectors is a matrix of the shape (n_components, n_timesteps).
-    - `RRR_b`: the time-varying biases of the neurons. The time-varying biases (for each neuron) is an array of the shape (n_timesteps). The time-varying bias should be close to zero if the input variables are normalized.
-    - `null_r2`: the average of the 3-fold cross-validated R² of the baseline null model that is agnostic to any input variables (only time in trial)
-
----
-
-### step 4 - examining the trained model:
-
-- `cd Fig2_globally_structured_brain` and run the figure scripts from that directory for further analyses of the model coefficients.
-
----
-
-### References:
-[1] "Rarely categorical, highly separable representations along the cortical hierarchy" L. Posani*, S. Wang*, S. Muscinelli, L. Paninski$, and S. Fusi$ (2026)
-
-Contact shuqi.wang@epfl.ch for questions.
+### Step 4 — Examine the trained model
+ 
+Figure scripts for further analyses of the model coefficients live in `Fig2_globally_structured_brain/`. Run them from within that directory:
+ 
+```bash
+cd Fig2_globally_structured_brain/
+python <figure_script>.py
+```
+ 
+## Contact
+ 
+For questions, please contact [shuqi.wang@epfl.ch](mailto:shuqi.wang@epfl.ch).
