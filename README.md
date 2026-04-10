@@ -8,6 +8,8 @@ Running this example from scratch requires the following steps:
 
 Steps 1–3 can take quite long (~ 3 days) to complete, therefore we attach a pre-trained model in `./trained_RRR_model/` to save the effort. 
 
+> **Note:** The pre-trained model is large and thus we used [Git LFS](https://git-lfs.com). Install it (`git lfs install`) before cloning, or run `git lfs pull` after cloning to fetch it.
+
 Next, we introduce the pipeline step-by-step. Please refer to the corresponding scripts [1] for more detailed information.
 
 ---
