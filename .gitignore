@@ -1,3 +1,6 @@
+**/__pycache__/*
+**/_dev_*
+**/_temp_*
 data/downloaded/*
 data/processed/*
 data/processed_sessions_180.zip
