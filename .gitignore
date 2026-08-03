@@ -7,3 +7,4 @@ data/processed_sessions_180.zip
 data/raw_sessions_180.zip
 data/readme
 retrained_RRR_model/*
+temp_*

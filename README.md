@@ -16,7 +16,8 @@ This subfolder walks through the full pipeline for training and exporting the RR
 3. Export the trained model to a DataFrame
 4. Examine the trained model (figure scripts)
  
-Steps 1–3 can take a long time (~3 days) to complete end-to-end. To save effort, we provide a pre-trained model in `./trained_RRR_model/` — you can skip directly to step 4 if you only want to reproduce the analyses.
+Steps 1–3 can take a long time (~3 days) to complete end-to-end. To save effort, we provide a pre-trained model in `./trained_RRR_model/` — you can skip directly to step 4 if you only want to reproduce the analyses. 
+**Note:** IBL data may vary across versions. If you need the exact IBL data we used — whether to train the RRR model, reproduce our analyses, or run your own — please contact [shuqi.wang@epfl.ch](mailto:shuqi.wang@epfl.ch).
  
 The notation and parameter names follow the conventions established in the main text and Methods section of the paper. Please refer to the paper for detailed definitions and further context.
  

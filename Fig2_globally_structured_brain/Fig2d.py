@@ -1,7 +1,7 @@
 ###########################################################################
 ### Supplementary code for the paper:
 ### "Rarely categorical, highly separable representations along the cortical hierarchy"
-### L. Posani*, S. Wang*, S. Muscinalli, L. Paninski$, and S. Fusi$ (2026).
+### L. Posani*, S. Wang*, S. Muscinelli, L. Paninski$, and S. Fusi$ (2026).
 ### Relevant: Fig.2d (Correlation between region-to-region functional similarity and their anatomical connectivity)
 ###########################################################################
 
