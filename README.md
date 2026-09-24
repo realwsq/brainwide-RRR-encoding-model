@@ -17,7 +17,7 @@ This subfolder walks through the full pipeline for training and exporting the RR
 4. Examine the trained model (figure scripts)
  
 Steps 1–3 can take a long time (~3 days) to complete end-to-end. To save effort, we provide a pre-trained model in `./trained_RRR_model/` — you can skip directly to step 4 if you only want to reproduce the analyses. 
-**Note:** IBL data may vary across versions. If you need the exact IBL data we used — whether to train the RRR model, reproduce our analyses, or run your own — please contact [shuqi.wang@epfl.ch](mailto:shuqi.wang@epfl.ch).
+**Note:** IBL data may vary across versions. If you need the exact IBL data we used — whether to train the RRR model, reproduce our analyses, or run your own — please contact [shuqi.wang@epfl.ch](mailto:shuqi.wang@epfl.ch). (Please allow up to one week for me to respond to your email. Thank you for your patience!)
  
 The notation and parameter names follow the conventions established in the main text and Methods section of the paper. Please refer to the paper for detailed definitions and further context.
  
